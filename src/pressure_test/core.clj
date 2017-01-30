@@ -35,8 +35,10 @@
   [in-dirs]
   (walk/postwalk #(if (= java.io.File (class %)) (calc-checksums %) %) in-dirs))
 
-(defn main
+(defn -main
   ""
   [in-directory]
-  (json/write-str (get-checksums
-                   ((scan-directory (clojure.java.io/file in-directory)) in-directory))))
+  (println
+   (json/pprint
+    (get-checksums
+     ((scan-directory (clojure.java.io/file in-directory)) in-directory)))))
