@@ -3,8 +3,6 @@
             [pandect.algo.md5 :refer [md5]]
             [clojure.data.json :as json]))
 
-(def test-dir (file-seq (clojure.java.io/file ".")))
-
 ;; Read file structure and nested hashmap to preserve structure.
 ;;
 
@@ -13,26 +11,12 @@
   [in-file]
   (java.nio.file.Files/isSymbolicLink (.toPath in-file)))
 
-(defn parse-filestring-to-k
-  ""
-  [file-string]
-  (filter #(not= % ".") (clojure.string/split file-string #"\/")))
-
-(defn process-file
-  ""
-  [current-map in-file]
-  (if (.isFile in-file)
-    (let [md5 (digest/md5 in-file)
-          sha1 (digest/sha1 in-file)
-          path-component-seq (parse-filestring-to-k (.getPath in-file))]
-      (assoc-in current-map path-component-seq {:md5 md5 :sha1 sha1}))
-    current-map))
-
-(defn main
-  ""
-  [in-directory]
-  (let [dir-seq (file-seq in-directory)]
-    (json/write-str (first (vals (reduce process-file {} dir-seq))))))
+(defn calc-checksums
+  "Given a file, return the SHA! and MD5 hashes of that file in a
+  hashmap."
+  [in-file]
+  {"md5" (md5 in-file)
+   "sha1" (sha1 in-file)})
 
 (defn scan-directory
   "Given a file, if it's a directory, it will return a hashmap of the
@@ -43,3 +27,14 @@
     (if (symbolic-link? in-file)
       {(.getName in-file) {}}
       {(.getName in-file) (reduce into {} (map scan-directory (.listFiles in-file)))})))
+
+(defn get-checksums
+  ""
+  [in-dirs]
+  (walk/postwalk #(if (= java.io.File (class %)) (calc-checksums %) %) in-dirs))
+
+(defn main
+  ""
+  [in-directory]
+  (json/write-str (get-checksums
+                   ((scan-directory (clojure.java.io/file in-directory)) in-directory))))
