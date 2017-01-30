@@ -1,7 +1,8 @@
 (ns pressure-test.core
-  (:require [pandect.algo.sha1 :refer [sha1]]
-            [pandect.algo.md5 :refer [md5]]
-            [clojure.data.json :as json]))
+  (:require [clojure.data.json :as json]
+            [clojure.walk :as walk]
+            [pandect.algo.sha1 :refer [sha1]]
+            [pandect.algo.md5 :refer [md5]]))
 
 ;; Read file structure and nested hashmap to preserve structure.
 ;;
@@ -26,7 +27,8 @@
     {(.getName in-file) in-file}
     (if (symbolic-link? in-file)
       {(.getName in-file) {}}
-      {(.getName in-file) (reduce into {} (map scan-directory (.listFiles in-file)))})))
+      {(.getName in-file) (reduce into {}
+                                  (map scan-directory (.listFiles in-file)))})))
 
 (defn get-checksums
   ""
