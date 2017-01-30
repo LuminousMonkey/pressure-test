@@ -5,16 +5,18 @@
 
 (def test-dir (file-seq (clojure.java.io/file ".")))
 
+;; Read file structure and nested hashmap to preserve structure.
+;;
+
+(defn symbolic-link?
+  "Given a Java io File, test if it's a symbolic link."
+  [in-file]
+  (java.nio.file.Files/isSymbolicLink (.toPath in-file)))
+
 (defn parse-filestring-to-k
   ""
   [file-string]
   (filter #(not= % ".") (clojure.string/split file-string #"\/")))
-
-(defn list-directory
-  "Given a directory, list all the files in it. Returns a hash-map."
-  [directory]
-  )
-
 
 (defn process-file
   ""
@@ -31,3 +33,13 @@
   [in-directory]
   (let [dir-seq (file-seq in-directory)]
     (json/write-str (first (vals (reduce process-file {} dir-seq))))))
+
+(defn scan-directory
+  "Given a file, if it's a directory, it will return a hashmap of the
+  directory structure, otherwise it will return the file."
+  [in-file]
+  (if (.isFile in-file)
+    {(.getName in-file) in-file}
+    (if (symbolic-link? in-file)
+      {(.getName in-file) {}}
+      {(.getName in-file) (reduce into {} (map scan-directory (.listFiles in-file)))})))
